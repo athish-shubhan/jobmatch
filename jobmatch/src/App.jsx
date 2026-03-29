@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════
-const GEMINI_API_KEY = "";   
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 const API_BASE       = "http://localhost:5001/api";
 
 // ═══════════════════════════════════════════════════════════════

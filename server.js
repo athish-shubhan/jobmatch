@@ -1,3 +1,4 @@
+require("dotenv").config();
 // ═══════════════════════════════════════════════════════════════
 //  JobMatch — Express.js Backend
 //  Setup:
@@ -23,7 +24,7 @@ const PORT       = 5001;
 const pool = mysql.createPool({
   host:               "localhost",
   user:               "db_admin",
-  password:           "athish123",
+  password:           process.env.DB_PASSWORD || "",
   database:           "jobmatch",
   waitForConnections: true,
   connectionLimit:    10,
