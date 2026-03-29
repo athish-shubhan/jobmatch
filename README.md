@@ -27,7 +27,10 @@ node server.js
 ```
 > Runs on http://localhost:5001
 
-Open `server.js` and set your MySQL password on line 26.
+Open `server.js` and fill in your MySQL password on line 26:
+```js
+password: "your_mysql_password",
+```
 
 ### 3. Frontend
 ```bash
@@ -37,7 +40,10 @@ npm run dev
 ```
 > Runs on http://localhost:5173
 
-Open `jobmatch/src/App.jsx` line 6 and paste your free Gemini API key.
+Open `jobmatch/src/App.jsx` and fill in your free Gemini API key on line 6:
+```js
+const GEMINI_API_KEY = "your_key_here";
+```
 Get one at: https://aistudio.google.com/app/apikey
 
 ---
