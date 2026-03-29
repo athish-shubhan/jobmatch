@@ -219,7 +219,6 @@ app.delete("/api/applicants/me/skills/:skill_id", auth(["applicant"]), wrap(asyn
     [req.user.id, req.params.skill_id]);
   res.json({ ok: true });
 }));
-
 // ═══════════════════════════════════════════════════════════════
 //  APPLICATIONS
 // ═══════════════════════════════════════════════════════════════
@@ -298,6 +297,35 @@ app.get("/api/dba/tables/:table", auth(["dba"]), wrap(async (req, res) => {
                  : "*";
   const [rows] = await pool.query(`SELECT ${safeCols} FROM ${t} LIMIT 100`);
   res.json(rows);
+}));
+
+// PATCH /api/dba/update/:table/:id  — db_editor UPDATE
+// PATCH /api/dba/update/:table/:id  — db_editor UPDATE
+app.patch("/api/dba/update/:table/:id", auth(["dba"]), wrap(async (req, res) => {
+  if (!req.user.permissions?.includes("UPDATE"))
+    return res.status(403).json({ error: "Permission denied: no UPDATE right" });
+
+  const ALLOWED = {
+    APPLICATION: { id: "application_id", cols: ["status"] },
+    APPLICANT:   { id: "applicant_id",   cols: ["name", "experience_years", "resume_url"] },
+    JOB:         { id: "job_id",         cols: ["title", "description", "min_experience", "is_active"] },
+    COMPANY:     { id: "company_id",     cols: ["name", "location", "industry"] },
+    EMPLOYER:    { id: "employer_id",    cols: ["name", "email"] },
+    SKILL:       { id: "skill_id",       cols: ["skill_name"] },
+  };
+
+  const t = req.params.table.toUpperCase();
+  if (!ALLOWED[t]) return res.status(400).json({ error: "Table not updatable" });
+
+  const { field, value } = req.body;
+  if (!ALLOWED[t].cols.includes(field))
+    return res.status(400).json({ error: `Field '${field}' not allowed` });
+
+  await pool.query(
+    `UPDATE ${t} SET ${field}=? WHERE ${ALLOWED[t].id}=?`,
+    [value, req.params.id]
+  );
+  res.json({ ok: true });
 }));
 
 app.post("/api/dba/users", auth(["dba"]), wrap(async (req, res) => {
