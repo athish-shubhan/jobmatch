@@ -17,8 +17,9 @@ const app = express();
 app.use(cors({ }));
 app.use(express.json());
 
-const JWT_SECRET = "jobmatch_secret_key_change_in_production";
+const JWT_SECRET = process.env.JWT_SECRET || "jobmatch_secret_key_change_in_production";
 const PORT       = 5001;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // ── DB Pool ───────────────────────────────────────────────────
 const pool = mysql.createPool({
@@ -347,6 +348,70 @@ app.post("/api/dba/users", auth(["dba"]), wrap(async (req, res) => {
       return res.status(409).json({ error: "Username already exists in MySQL" });
     throw e;
   } finally { conn.release(); }
+}));
+
+// ═══════════════════════════════════════════════════════════════
+//  AI PROXY
+// ═══════════════════════════════════════════════════════════════
+
+app.post("/api/ai/advice", auth(["applicant"]), wrap(async (req, res) => {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_key_here") {
+    return res.status(500).json({ error: "Gemini API key not configured on server" });
+  }
+
+  const { job_id } = req.body;
+  if (!job_id) return res.status(400).json({ error: "job_id required" });
+
+  try {
+    // 1. Fetch applicant profile & skills
+    const [profileRows] = await pool.query(
+      `SELECT name, experience_years FROM APPLICANT WHERE applicant_id = ?`, [req.user.id]
+    );
+    const [skillRows] = await pool.query(
+      `SELECT s.skill_name FROM APPLICANT_SKILL aps 
+       JOIN SKILL s ON s.skill_id = aps.skill_id 
+       WHERE aps.applicant_id = ?`, [req.user.id]
+    );
+
+    // 2. Fetch job details
+    const [jobRows] = await pool.query(
+      `SELECT j.title, j.description, c.name AS company_name 
+       FROM JOB j JOIN COMPANY c ON c.company_id = j.company_id 
+       WHERE j.job_id = ?`, [job_id]
+    );
+
+    if (!profileRows.length || !jobRows.length) {
+      return res.status(404).json({ error: "Applicant or Job not found" });
+    }
+
+    const profileData = profileRows[0];
+    const jobData     = jobRows[0];
+    const skills      = skillRows.map(s => s.skill_name).join(", ");
+
+    const prompt = `You are a career advisor.\n\nApplicant: ${profileData.name}, ${profileData.experience_years} years experience\nSkills: ${skills}\n\nJob: ${jobData.title} at ${jobData.company_name}\nDescription: ${jobData.description}\n\nGive short, specific career advice for this match.`;
+
+    // 3. Call Gemini
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+
+    const data = await geminiRes.json();
+    if (!geminiRes.ok) {
+      throw new Error(data.error?.message || "Gemini API error");
+    }
+
+    const advice = data.candidates?.[0]?.content?.parts?.[0]?.text || "No advice available.";
+    res.json({ advice });
+
+  } catch (e) {
+    console.error("AI Advisor Error:", e);
+    res.status(500).json({ error: e.message });
+  }
 }));
 
 app.listen(PORT, () => console.log(`JobMatch API → http://localhost:${PORT}`));
