@@ -43,10 +43,4 @@ npm install
 npm run dev
 ```
 
----
 
-## Improvements Made
-
-1.  **Security**: Gemini API requests are now proxied through the backend. The API key is never exposed to the client.
-2.  **Modularity**: Refactored the monolithic `App.jsx` into a component-based structure in `src/components/` and `src/pages/`.
-3.  **Clean Code**: Secrets and configurations are moved to environment variables for better safety and portability.
