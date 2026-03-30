@@ -6,10 +6,10 @@ A skill-based job matching platform built with React, Express.js, and MySQL.
 
 ## Stack
 
-- **Frontend** — React + Vite (`/jobmatch`)
-- **Backend** — Node.js + Express (`server.js`)
-- **Database** — MySQL 8.0 (`schema.sql`)
-- **AI** — Gemini 2.5 Flash
+- **Frontend** - React + Vite (`/jobmatch`)
+- **Backend** - Node.js + Express (`server.js`)
+- **Database** - MySQL 8.0 (`schema.sql`)
+- **AI** - Gemini 2.5 Flash
 
 ---
 
