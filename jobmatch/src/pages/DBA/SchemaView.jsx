@@ -38,7 +38,9 @@ export function SchemaView() {
   return (
     <div>
       <h1 style={S.h1}>Database Schema</h1>
-      <p style={S.muted}>MySQL 8.0 · schema.sql · run: mysql -u root -p < schema.sql</p>
+      <p style={S.muted}>
+    MySQL 8.0 · schema.sql · run: mysql -u root -p {"<"} schema.sql
+      </p>
       <div style={{ background:"#08090d", border:"1px solid #1e2a3a", borderRadius:10, padding:24, overflowX:"auto" }}>
         <pre style={{ margin:0, fontSize:12, color:"#94a3b8", lineHeight:1.8, fontFamily:"'IBM Plex Mono',monospace", whiteSpace:"pre-wrap" }}>
           {SQL_SCHEMA.split("\n").map((line,i) => {
