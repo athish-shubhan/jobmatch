@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Load schema.sql
+        run: mysql -h 127.0.0.1 -uroot -proot < schema.sql
+      - name: Unit + MySQL integration tests
+        run: npm test
+        env:
+          JOBMATCH_DB_TESTS: "1"
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASSWORD: root
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jobmatch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: jobmatch/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
