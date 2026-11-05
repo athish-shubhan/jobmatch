@@ -49,3 +49,36 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            jobmatch/package-lock.json
+      - run: npm ci
+      - run: npm ci && npm run build
+        working-directory: jobmatch
+      - run: npx playwright install --with-deps chromium
+      - name: Load schema.sql
+        run: mysql -h 127.0.0.1 -uroot -proot < schema.sql
+      - name: UI smoke test (applicant, employer, DBA)
+        run: npm run test:e2e
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASSWORD: root

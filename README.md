@@ -73,4 +73,12 @@ JOBMATCH_DB_TESTS=1 DB_USER=root DB_PASSWORD=<root password> npm test
 ```
 The integration tests change data, so reload `schema.sql` before running them again.
 
-CI (`.github/workflows/ci.yml`) runs both against a MySQL 8.0 service, and runs `npm run lint` and `npm run build` for the frontend.
+A browser smoke test logs in as an applicant, an employer and a DBA in headless Chromium, using the built frontend, the real API and MySQL. It also checks that applying to a job shows a match score and that an employer only sees their own jobs. With a freshly loaded `schema.sql`:
+```bash
+npm install && npx playwright install chromium
+(cd jobmatch && npm install && npm run build)
+DB_USER=root DB_PASSWORD=<root password> npm run test:e2e
+```
+It starts the API on port 5001 itself, so stop any running `npm start` first.
+
+CI (`.github/workflows/ci.yml`) runs the unit, integration and browser tests against a MySQL 8.0 service, and runs `npm run lint` and `npm run build` for the frontend.
