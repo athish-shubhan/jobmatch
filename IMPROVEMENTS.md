@@ -51,5 +51,7 @@ Quick start from a clean clone of this branch: `npm ci`, `npm test` (35 pass), `
 
 **Not verified:** the AI Advisor against the real Gemini API (no API key; it is tested with a fake `fetch` only). The frontend was built and linted but not clicked through in a browser.
 
+**Claims I could not verify:** the seed `APPLICATION` rows store `match_score` 0.85 (Alice, job 2) and 0.78 (Bob, job 1), but `v_job_applicant_match` computes 0.80 and 0.70 for those pairs. I left the seed values unchanged.
+
 ### Files touched
 `server.js`, `schema.sql`, `package.json`, `package-lock.json`, `.gitignore`, `.env.example` (new), `README.md`, `test/` (new), `.github/workflows/ci.yml` (new), `jobmatch/src/pages/Applicant/ApplicantDashboard.jsx`, `jobmatch/src/pages/Employer/MyJobs.jsx`, `jobmatch/src/pages/Employer/PostJob.jsx`, `IMPROVEMENTS.md` (new); removed `node_modules/` and `.DS_Store` from git.
