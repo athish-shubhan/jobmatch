@@ -108,6 +108,46 @@ describe("API against MySQL", { skip: !enabled && "set JOBMATCH_DB_TESTS=1 to ru
     assert.ok(!mine.some((s) => s.skill_id === 7));
   });
 
+  describe("constraint violations are client errors, not 500s", () => {
+    before(async () => {
+      const r = await call(srv.url, "/api/auth/login/dba", { method: "POST", body: { username: "db_admin", password: "admin123" } });
+      tokens.dba = r.body.token;
+    });
+
+    // [name, expected status, path, method, body, who is calling]
+    const cases = [
+      ["register with negative experience", 400, "/api/auth/register", "POST", { name: "N", email: "neg@x.com", password: "p", experience_years: -3 }],
+      ["register with a 300-char name", 400, "/api/auth/register", "POST", { name: "a".repeat(300), email: "long@x.com", password: "p" }],
+      ["profile update without name", 400, "/api/applicants/me", "PUT", { experience_years: 2 }, "alice"],
+      ["profile update with negative experience", 400, "/api/applicants/me", "PUT", { name: "Alice", experience_years: -1 }, "alice"],
+      ["job with negative min_experience", 400, "/api/jobs", "POST", { title: "T", min_experience: -2 }, "techcorp"],
+      ["job with unknown skill", 400, "/api/jobs", "POST", { title: "T", skills: [{ skill_id: 999, importance: "required" }] }, "techcorp"],
+      ["applicant adds unknown skill", 400, "/api/applicants/me/skills", "POST", { skill_id: 999, proficiency_level: 3 }, "alice"],
+      ["DBA sets negative experience", 400, "/api/dba/update/APPLICANT/1", "PATCH", { field: "experience_years", value: -5 }, "dba"],
+      ["DBA sets invalid status", 400, "/api/dba/update/APPLICATION/1", "PATCH", { field: "status", value: "Hired" }, "dba"],
+      ["DBA renames a skill to an existing name", 409, "/api/dba/update/SKILL/1", "PATCH", { field: "skill_name", value: "React" }, "dba"],
+      ["DBA updates a missing row", 404, "/api/dba/update/SKILL/9999", "PATCH", { field: "skill_name", value: "Zig" }, "dba"],
+    ];
+
+    for (const [name, status, path, method, body, who] of cases) {
+      test(`${name} -> ${status}`, async () => {
+        const r = await call(srv.url, path, { method, body, auth: who && tokens[who] });
+        assert.equal(r.status, status, JSON.stringify(r.body));
+      });
+    }
+
+    test("a job with an unknown skill is rolled back", async () => {
+      const [[{ n }]] = await pool.query("SELECT COUNT(*) AS n FROM JOB WHERE title = 'T'");
+      assert.equal(n, 0);
+    });
+
+    test("DBA update to the current value still succeeds", async () => {
+      const [[row]] = await pool.query("SELECT skill_name FROM SKILL WHERE skill_id = 2");
+      const r = await call(srv.url, "/api/dba/update/SKILL/2", { method: "PATCH", body: { field: "skill_name", value: row.skill_name }, auth: tokens.dba });
+      assert.equal(r.status, 200);
+    });
+  });
+
   test("DBA table viewer hides password hashes", async () => {
     const r = await call(srv.url, "/api/auth/login/dba", { method: "POST", body: { username: "db_viewer", password: "view123" } });
     const t = await call(srv.url, "/api/dba/tables/applicant", { auth: r.body.token });

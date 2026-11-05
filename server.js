@@ -17,6 +17,18 @@ const AI_TIMEOUT_MS  = 15000;
 const APPLICATION_STATUSES = ["Pending", "Under Review", "Shortlisted", "Rejected"];
 const SKILL_IMPORTANCE     = ["required", "preferred"];
 
+// MySQL constraint errors caused by bad client input, mapped to 4xx responses so
+// the schema's CHECK / NOT NULL / FK / ENUM rules double as API validation.
+const CLIENT_DB_ERRORS = {
+  ER_CHECK_CONSTRAINT_VIOLATED: [400, "Value out of allowed range"],
+  ER_BAD_NULL_ERROR:            [400, "Missing required field"],
+  ER_DATA_TOO_LONG:             [400, "Value too long"],
+  WARN_DATA_TRUNCATED:          [400, "Invalid value for field"],
+  ER_TRUNCATED_WRONG_VALUE_FOR_FIELD: [400, "Invalid value for field"],
+  ER_NO_REFERENCED_ROW_2:       [400, "Referenced record does not exist"],
+  ER_DUP_ENTRY:                 [409, "Duplicate value"],
+};
+
 const isPositiveInt = (v) => Number.isInteger(Number(v)) && Number(v) > 0 && String(v).trim() !== "";
 
 // ── DB Pool ───────────────────────────────────────────────────
@@ -365,10 +377,11 @@ function createApp({
     if (!ALLOWED[t].cols.includes(field))
       return res.status(400).json({ error: `Field '${field}' not allowed` });
 
-    await pool.query(
+    const [result] = await pool.query(
       `UPDATE ${t} SET ${field}=? WHERE ${ALLOWED[t].id}=?`,
       [value, req.params.id]
     );
+    if (!result.affectedRows) return res.status(404).json({ error: "Row not found" });
     res.json({ ok: true });
   }));
 
@@ -468,6 +481,10 @@ function createApp({
   app.use((err, req, res, _next) => {
     if (err.type === "entity.parse.failed")
       return res.status(400).json({ error: "Invalid JSON body" });
+    if (Object.hasOwn(CLIENT_DB_ERRORS, err.code)) {
+      const [status, error] = CLIENT_DB_ERRORS[err.code];
+      return res.status(status).json({ error });
+    }
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
   });

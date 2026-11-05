@@ -55,3 +55,45 @@ Quick start from a clean clone of this branch: `npm ci`, `npm test` (35 pass), `
 
 ### Files touched
 `server.js`, `schema.sql`, `package.json`, `package-lock.json`, `.gitignore`, `.env.example` (new), `README.md`, `test/` (new), `.github/workflows/ci.yml` (new), `jobmatch/src/pages/Applicant/ApplicantDashboard.jsx`, `jobmatch/src/pages/Employer/MyJobs.jsx`, `jobmatch/src/pages/Employer/PostJob.jsx`, `IMPROVEMENTS.md` (new); removed `node_modules/` and `.DS_Store` from git.
+
+## Round 2 — 2026-11-05
+
+### What changed
+1. **Bug: invalid input still came back as 500 Internal Server Error.** Inputs that break a schema rule reached MySQL, and the resulting `CHECK`, `NOT NULL`, foreign-key, length, `ENUM` or `UNIQUE` error became a 500. Examples: negative experience, a profile update without a name, a 300-character name, a job with an unknown `skill_id`, a DBA setting status to "Hired". The error handler now maps those six MySQL error codes to 400 (or 409 for duplicates) with a short message, and still never echoes the raw MySQL text. Every other error stays a 500. The schema's own constraints therefore double as API validation, without repeating each rule in JavaScript.
+2. **Bug: DBA updates of a row that doesn't exist reported success.** `PATCH /api/dba/update/:table/:id` returned `{ ok: true }` when no row matched. It now returns 404. Updating a row to its current value still returns 200, which is tested because it depends on mysql2's found-rows behaviour.
+3. **Tests.** 7 unit tests cover the error-code mapping (no leaked details; unknown codes stay 500). 13 integration tests run against MySQL: the 11 cases below, a check that a job with an unknown skill is rolled back, and the same-value DBA update.
+4. **`docs/architecture.md`.** Adds a component diagram, a role table, an ER diagram of the 8 tables, and the `v_job_applicant_match` scoring formula written out from `schema.sql`. Both Mermaid diagrams were rendered with Mermaid 11.4.1 to check they parse. The README links to it.
+
+I also measured the frontend's fetch-during-render pattern. The production build makes each request once per page load (`GET /api/jobs`: 1). Dev mode makes 2, which is React StrictMode's intentional double render. That isn't a bug, so I left it.
+
+### How it was verified
+Same requests against the round-1 server, then this branch (MySQL 8.0 in Docker, `schema.sql` reloaded before each run):
+
+| Request | round 1 | round 2 |
+|---|---|---|
+| register `experience_years: -3` | 500 | 400 Value out of allowed range |
+| register 300-char name | 500 | 400 Value too long |
+| `PUT /applicants/me` without name | 500 | 400 Missing required field |
+| `PUT /applicants/me` experience -1 | 500 | 400 |
+| `POST /jobs` `min_experience: -2` | 500 | 400 |
+| `POST /jobs` with `skill_id: 999` | 500 | 400 Referenced record does not exist |
+| `POST /applicants/me/skills` `skill_id: 999` | 500 | 400 |
+| DBA `experience_years = -5` | 500 | 400 |
+| DBA `status = "Hired"` | 500 | 400 Invalid value for field |
+| DBA rename skill to an existing name | 500 | 409 Duplicate value |
+| DBA update row 9999 | 200 `{"ok":true}` | 404 Row not found |
+
+```
+$ npm test                                                       # unit only
+# tests 42   # pass 42   # fail 0
+$ JOBMATCH_DB_TESTS=1 DB_HOST=127.0.0.1 DB_USER=root DB_PASSWORD=root npm test
+# tests 66   # suites 9   # pass 66   # fail 0                    # was 46 after round 1
+# same test files with the round-1 server.js:
+# tests 66   # pass 49    # fail 17
+```
+Browser check (Playwright/Chromium against the built frontend, real API and MySQL): logging in as `alice@email.com / pass123` lands on "Browse Jobs" with no page errors.
+
+**Not verified:** the AI advisor against the real Gemini API (no key).
+
+### Files touched
+`server.js`, `test/api.test.js`, `test/db.test.js`, `docs/architecture.md` (new), `README.md`, `IMPROVEMENTS.md`.

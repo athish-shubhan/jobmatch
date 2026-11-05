@@ -11,6 +11,8 @@ A skill-based job matching platform built with React, Express.js, and MySQL.
 - **Database**: MySQL 8.0 (Views & Stored Procedures)
 - **AI**: Gemini 2.5 Flash (via Secure Backend Proxy)
 
+See [docs/architecture.md](docs/architecture.md) for a component diagram, the data model and how the match score is computed.
+
 ---
 
 ## Quick start
