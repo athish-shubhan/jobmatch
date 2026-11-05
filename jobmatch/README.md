@@ -1,16 +1,19 @@
-# React + Vite
+# JobMatch frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite single-page app for JobMatch. Setup, demo logins and tests are documented in the [root README](../README.md), and the architecture in [docs/architecture.md](../docs/architecture.md).
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev       # http://localhost:5173, expects the API on http://localhost:5001
+npm run lint
+npm run build     # output in dist/
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Set `VITE_API_BASE` at build time to point at a different API, for example `VITE_API_BASE=https://api.example.com/api npm run build`.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Folder | Contents |
+|---|---|
+| `src/api.js` | `fetch` wrapper that adds the JWT and turns error responses into exceptions |
+| `src/pages/` | One folder per role (`Applicant/`, `Employer/`, `DBA/`) plus login and register |
+| `src/components/Common.jsx` | Sidebar, spinner, error box, toast |
+| `src/styles.js` | Shared inline style objects |

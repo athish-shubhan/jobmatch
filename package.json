@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test \"test/*.test.js\"",
-    "test:db": "JOBMATCH_DB_TESTS=1 node --test \"test/*.test.js\""
+    "test:db": "JOBMATCH_DB_TESTS=1 node --test \"test/*.test.js\"",
+    "test:e2e": "JOBMATCH_E2E=1 node --test \"e2e/*.test.js\""
   },
   "keywords": [],
   "author": "",
@@ -22,5 +23,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }

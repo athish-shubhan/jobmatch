@@ -97,3 +97,36 @@ Browser check (Playwright/Chromium against the built frontend, real API and MySQ
 
 ### Files touched
 `server.js`, `test/api.test.js`, `test/db.test.js`, `docs/architecture.md` (new), `README.md`, `IMPROVEMENTS.md`.
+
+## Round 3 — 2026-11-05
+
+### What changed
+1. **Browser smoke test for the frontend (`e2e/ui.e2e.test.js`, 4 tests, `npm run test:e2e`).** Until now the React app had no automated test. This test serves the built `jobmatch/dist`, starts the real API in-process, and drives headless Chromium against MySQL:
+   - applicant `alice@email.com / pass123`: browse jobs, apply to "Data Analyst", see the "Applied! Match score: N%" toast, find it under My Applications
+   - employer `hr@techcorp.com / hr123`: rank applicants for Full Stack Developer (Bob Smith listed); My Jobs shows TechCorp jobs and not DataSystems' "Data Analyst"
+   - DBA `db_viewer / view123`: schema page and table viewer
+   - wrong password shows "Invalid credentials" and stays on the login page
+
+   Each role test also fails on any page error or console error. `playwright` (pinned 1.63.0) is the only new devDependency.
+2. **CI.** A new `e2e` job builds the frontend, loads `schema.sql` into a MySQL 8.0 service and runs the smoke test.
+3. **`jobmatch/README.md`** was the unmodified Vite template. It now describes the frontend: commands, `VITE_API_BASE`, folder layout, and links to the root README and the architecture doc. The root README documents how to run the browser test.
+
+### How it was verified
+```
+$ mysql -uroot -proot < schema.sql
+$ DB_HOST=127.0.0.1 DB_USER=root DB_PASSWORD=root npm run test:e2e
+# tests 4   # pass 4   # fail 0
+
+# same test with main's schema.sql (the broken demo password hashes fixed in round 1):
+#     not ok 1 - applicant: browse jobs, apply, see the application
+#     not ok 2 - employer: rank applicants for an own job
+# tests 4   # pass 2   # fail 2
+
+$ npm test                      # unit tests unaffected
+# tests 42   # pass 42   # fail 0
+```
+
+**Not verified:** the AI Advisor page (needs a Gemini key), and browsers other than Chromium.
+
+### Files touched
+`e2e/ui.e2e.test.js` (new), `package.json`, `package-lock.json`, `.github/workflows/ci.yml`, `jobmatch/README.md`, `README.md`, `IMPROVEMENTS.md`.
