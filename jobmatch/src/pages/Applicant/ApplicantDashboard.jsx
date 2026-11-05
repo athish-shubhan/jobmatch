@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Sidebar, Spinner, ErrBox } from "../../components/Common";
 import { BrowseJobs } from "./BrowseJobs";
 import { MyApplications } from "./MyApplications";

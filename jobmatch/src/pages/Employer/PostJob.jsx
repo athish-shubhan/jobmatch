@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { S } from "../../styles";
-import { Spinner } from "../../components/Common";
+import { Spinner, ErrBox } from "../../components/Common";
 
 export function PostJob({ call, showToast }) {
   const [allSkills, setAllSkills] = useState(null);
@@ -8,10 +8,13 @@ export function PostJob({ call, showToast }) {
   const [selected, setSelected]   = useState([]);
   const upd = (k,v) => setForm(f => ({ ...f, [k]:v }));
 
+  const [loadErr, setLoadErr]     = useState("");
+
   const loadSkills = useCallback(async () => {
-    try { setAllSkills(await call("/skills")); } catch {}
+    try { setAllSkills(await call("/skills")); } catch(e) { setLoadErr(e.message); }
   }, [call]);
 
+  if (loadErr) return <ErrBox msg={loadErr} />;
   if (!allSkills) { loadSkills(); return <Spinner />; }
 
   const toggle = (skill_id, importance) => {

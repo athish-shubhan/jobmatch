@@ -1,13 +1,15 @@
 import { useState, useCallback } from "react";
 import { S } from "../../styles";
-import { Spinner } from "../../components/Common";
+import { Spinner, ErrBox } from "../../components/Common";
 
 export function MyJobs({ call }) {
   const [jobs, setJobs] = useState(null);
+  const [err, setErr]   = useState("");
   const load = useCallback(async () => {
-    try { setJobs(await call("/employer/jobs")); } catch {}
+    try { setJobs(await call("/employer/jobs")); } catch(e) { setErr(e.message); }
   }, [call]);
 
+  if (err) return <ErrBox msg={err} />;
   if (!jobs) { load(); return <Spinner />; }
   return (
     <div>

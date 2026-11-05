@@ -261,22 +261,22 @@ INSERT INTO SKILL (skill_name) VALUES
     ('MySQL'), ('Machine Learning'), ('Docker'), ('AWS'),
     ('Data Analysis'), ('Git');
 
--- Passwords: bcrypt of 'pass123' and 'hr123'
--- In production run: node -e "const b=require('bcryptjs');console.log(b.hashSync('pass123',10))"
--- For demo we store a known bcrypt hash:
+-- Passwords: bcrypt of 'pass123' (applicants) and 'hr123' (employers).
+-- Regenerate with: node -e "console.log(require('bcryptjs').hashSync('pass123', 10))"
+-- test/schema.test.js checks that these hashes match the demo passwords.
 INSERT INTO APPLICANT (name, email, password_hash, experience_years, resume_url) VALUES
     ('Alice Johnson', 'alice@email.com',
-     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- pass123
+     '$2b$10$QwH8K2N2H4oQmMFXjpRmjO8TLpfNKC1Y41aYc9BG/Zb/3ePSftwkK', -- pass123
      3, 'https://resume.example.com/alice'),
     ('Bob Smith', 'bob@email.com',
-     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- pass123
+     '$2b$10$QwH8K2N2H4oQmMFXjpRmjO8TLpfNKC1Y41aYc9BG/Zb/3ePSftwkK', -- pass123
      2, 'https://resume.example.com/bob');
 
 INSERT INTO EMPLOYER (company_id, name, email, password_hash) VALUES
     (1, 'Sarah HR',     'hr@techcorp.com',
-     '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'), -- hr123
+     '$2b$10$dPXx8JDrQUc1ZHeS7GUEQO45zsD5KDGpKd2tlWJWqTJmBvtMMZpam'), -- hr123
     (2, 'Mike Recruit', 'recruit@datasystems.com',
-     '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'); -- hr123
+     '$2b$10$dPXx8JDrQUc1ZHeS7GUEQO45zsD5KDGpKd2tlWJWqTJmBvtMMZpam'); -- hr123
 
 INSERT INTO JOB (company_id, title, description, min_experience) VALUES
     (1, 'Full Stack Developer',
