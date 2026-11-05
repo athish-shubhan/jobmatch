@@ -178,3 +178,27 @@ describe("AI advisor proxy", () => {
     } finally { await srv.close(); }
   });
 });
+
+describe("MySQL constraint errors map to client errors", () => {
+  const dbError = (code) => Object.assign(new Error(`${code}: detail`), { code });
+  const cases = [
+    ["ER_CHECK_CONSTRAINT_VIOLATED", 400],
+    ["ER_BAD_NULL_ERROR", 400],
+    ["ER_DATA_TOO_LONG", 400],
+    ["WARN_DATA_TRUNCATED", 400],
+    ["ER_NO_REFERENCED_ROW_2", 400],
+    ["ER_DUP_ENTRY", 409],
+    ["ER_LOCK_DEADLOCK", 500],
+  ];
+  for (const [code, status] of cases) {
+    test(`${code} -> ${status}`, async () => {
+      const pool = fakePool([[/UPDATE APPLICANT/, () => { throw dbError(code); }]]);
+      const srv = await start({ pool });
+      try {
+        const r = await call(srv.url, "/api/applicants/me", { method: "PUT", body: { name: "A" }, auth: applicant });
+        assert.equal(r.status, status);
+        assert.ok(!r.body.error.includes("detail"), "internal message must not leak");
+      } finally { await srv.close(); }
+    });
+  }
+});
